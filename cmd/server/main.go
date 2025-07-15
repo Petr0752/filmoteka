@@ -17,25 +17,44 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// --- репозитории
 	ar := repository.NewActorPG(db)
 	mr := repository.NewMoviePG(db)
 
-	// --- сервисы
 	as := service.NewActorService(ar)
 	ms := service.NewMovieService(mr)
 
-	// --- контроллеры
 	ah := controller.NewActorHandler(as, mr)
 	mh := controller.NewMovieHandler(ms)
 
-	// простейший роутинг
-	http.HandleFunc("/actors", ah.Create)        // POST
-	http.HandleFunc("/actors/list", ah.List)     // GET
-	http.HandleFunc("/movies", mh.Create)        // POST
-	http.HandleFunc("/movies/list", mh.List)     // GET ?sort=
-	http.HandleFunc("/movies/search", mh.Search) // GET ?q=
+	http.HandleFunc("/actors", ah.Create)
+	http.HandleFunc("/actors/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			ah.GetByID(w, r)
+		case http.MethodPatch:
+			ah.Update(w, r)
+		case http.MethodDelete:
+			ah.Delete(w, r)
+		default:
+			http.Error(w, "method not allowed", 405)
+		}
+	})
+	http.HandleFunc("/actors/list", ah.List)
 
-	log.Println("API listening on :8080")
+	http.HandleFunc("/movies", mh.Create)
+	http.HandleFunc("/movies/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPatch:
+			mh.Update(w, r)
+		case http.MethodDelete:
+			mh.Delete(w, r)
+		default:
+			http.Error(w, "method not allowed", 405)
+		}
+	})
+	http.HandleFunc("/movies/list", mh.List)
+	http.HandleFunc("/movies/search", mh.Search)
+
+	log.Println("Server listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

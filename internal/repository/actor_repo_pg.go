@@ -5,9 +5,13 @@ import (
 	"filmoteka/internal/model"
 )
 
-type ActorPG struct{ db *sql.DB }
+type ActorPG struct {
+	db *sql.DB
+}
 
-func NewActorPG(db *sql.DB) *ActorPG { return &ActorPG{db: db} }
+func NewActorPG(db *sql.DB) *ActorPG {
+	return &ActorPG{db: db}
+}
 
 func (r *ActorPG) Create(a *model.Actor) (int64, error) {
 	err := r.db.QueryRow(
@@ -47,4 +51,15 @@ func (r *ActorPG) List() ([]model.Actor, error) {
 		res = append(res, a)
 	}
 	return res, rows.Err()
+}
+
+func (r *ActorPG) GetByID(id int64) (*model.Actor, error) {
+	var a model.Actor
+	err := r.db.QueryRow(
+		`SELECT id, name, gender, birth_date FROM actors WHERE id=$1`, id,
+	).Scan(&a.ID, &a.Name, &a.Gender, &a.BirthDate)
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
 }

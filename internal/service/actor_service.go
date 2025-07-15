@@ -6,7 +6,9 @@ import (
 	"filmoteka/internal/repository"
 )
 
-type ActorService struct{ repo repository.ActorRepository }
+type ActorService struct {
+	repo repository.ActorRepository
+}
 
 func NewActorService(r repository.ActorRepository) *ActorService { return &ActorService{repo: r} }
 
@@ -33,4 +35,8 @@ func (s *ActorService) ListWithMovies(mr repository.MovieRepository) ([]model.Ac
 		actors[i].Movies = movies
 	}
 	return actors, nil
+}
+
+func (s *ActorService) Get(id int64) (*model.Actor, error) {
+	return s.repo.GetByID(id)
 }
