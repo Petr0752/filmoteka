@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"filmoteka/internal/controller/dto"
 	"filmoteka/internal/model"
-	"filmoteka/internal/repository"
 	"filmoteka/internal/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -11,25 +11,31 @@ import (
 
 type ActorHandler struct {
 	svc *service.ActorService
-	mr  repository.MovieRepository
+	mr  service.MovieRepository
 }
 
-func NewActorHandler(s *service.ActorService, mr repository.MovieRepository) *ActorHandler {
+func NewActorHandler(s *service.ActorService, mr service.MovieRepository) *ActorHandler {
 	return &ActorHandler{svc: s, mr: mr}
 }
 
 func (h *ActorHandler) Create(c *gin.Context) {
-	var a model.Actor
-	if err := c.ShouldBindJSON(&a); err != nil {
+	var actorDTO dto.ActorDTO
+	if err := c.ShouldBindJSON(&actorDTO); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
 		return
 	}
 
-	id, err := h.svc.Add(&a)
+	if err := dto.ValidateActorDTO(&actorDTO); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	id, err := h.svc.Add(dto.ActorDTOToModel(&actorDTO))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 

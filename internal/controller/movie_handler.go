@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"filmoteka/internal/controller/dto"
 	"filmoteka/internal/model"
 	"filmoteka/internal/service"
 	"github.com/gin-gonic/gin"
@@ -17,17 +18,23 @@ func NewMovieHandler(s *service.MovieService) *MovieHandler {
 }
 
 func (h *MovieHandler) Create(c *gin.Context) {
-	var m model.Movie
-	if err := c.ShouldBindJSON(&m); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
+	var movieDTO dto.MovieDTO
+	if err := c.ShouldBindJSON(&movieDTO); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
 		return
 	}
 
-	id, err := h.svc.Add(&m)
-	if err != nil {
+	if err := dto.ValidateMovieDTO(&movieDTO); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	id, err := h.svc.Add(dto.MovieDTOToModel(&movieDTO))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
