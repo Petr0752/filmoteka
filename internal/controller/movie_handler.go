@@ -108,3 +108,38 @@ func (h *MovieHandler) AddActorToMovie(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+func (h *MovieHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r.URL.Path, "/movies/")
+	if err != nil {
+		http.Error(w, "bad id", 400)
+		return
+	}
+
+	var a model.Movie
+	if err = json.NewDecoder(r.Body).Decode(&a); err != nil {
+		http.Error(w, "bad json", 400)
+		return
+	}
+	a.ID = id
+
+	if err = h.svc.Update(&a); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	w.WriteHeader(204)
+}
+
+func (h *MovieHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r.URL.Path, "/movies/")
+	if err != nil {
+		http.Error(w, "bad id", 400)
+		return
+	}
+
+	if err = h.svc.Delete(id); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	w.WriteHeader(204)
+}

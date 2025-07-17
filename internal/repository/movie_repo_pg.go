@@ -7,9 +7,13 @@ import (
 	"strings"
 )
 
-type MoviePG struct{ db *sql.DB }
+type MoviePG struct {
+	db *sql.DB
+}
 
-func NewMoviePG(db *sql.DB) *MoviePG { return &MoviePG{db: db} }
+func NewMoviePG(db *sql.DB) *MoviePG {
+	return &MoviePG{db: db}
+}
 
 func (r *MoviePG) Create(m *model.Movie) (int64, error) {
 	tx, err := r.db.Begin()
