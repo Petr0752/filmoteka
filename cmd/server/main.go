@@ -4,38 +4,31 @@ import (
 	"database/sql"
 	"filmoteka/internal/controller"
 	"filmoteka/internal/repository"
+	"filmoteka/internal/routes"
 	"filmoteka/internal/service"
 	_ "github.com/lib/pq"
 	"log"
-	"net/http"
 )
 
 func main() {
-	db, err := sql.Open("postgres",
-		"postgres://film_admin:secret@localhost:5432/filmoteka?sslmode=disable")
+	db, err := sql.Open("postgres", "postgres://film_admin:secret@localhost:5432/filmoteka?sslmode=disable")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("DB connect error:", err)
 	}
+	defer db.Close()
 
-	// --- репозитории
-	ar := repository.NewActorPG(db)
-	mr := repository.NewMoviePG(db)
+	actorRepo := repository.NewActorPG(db)
+	movieRepo := repository.NewMoviePG(db)
 
-	// --- сервисы
-	as := service.NewActorService(ar)
-	ms := service.NewMovieService(mr)
+	actorService := service.NewActorService(actorRepo)
+	movieService := service.NewMovieService(movieRepo)
 
-	// --- контроллеры
-	ah := controller.NewActorHandler(as, mr)
-	mh := controller.NewMovieHandler(ms)
+	actorHandler := controller.NewActorHandler(actorService, movieRepo)
+	movieHandler := controller.NewMovieHandler(movieService)
 
-	// простейший роутинг
-	http.HandleFunc("/actors", ah.Create)        // POST
-	http.HandleFunc("/actors/list", ah.List)     // GET
-	http.HandleFunc("/movies", mh.Create)        // POST
-	http.HandleFunc("/movies/list", mh.List)     // GET ?sort=
-	http.HandleFunc("/movies/search", mh.Search) // GET ?q=
+	router := routes.SetupRouter(actorHandler, movieHandler)
 
-	log.Println("API listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	if err := router.Run(":8080"); err != nil {
+		log.Fatal("Server error:", err)
+	}
 }

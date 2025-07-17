@@ -21,7 +21,13 @@ func (s *MovieService) Add(m *model.Movie) (int64, error) {
 }
 
 func (s *MovieService) Update(m *model.Movie) error { return s.repo.Update(m) }
-func (s *MovieService) Delete(id int64) error       { return s.repo.Delete(id) }
+
+func (s *MovieService) Delete(id int64) error { return s.repo.Delete(id) }
 
 func (s *MovieService) List(sort string) ([]model.Movie, error) { return s.repo.List(sort) }
-func (s *MovieService) Search(q string) ([]model.Movie, error)  { return s.repo.Search(q) }
+
+func (s *MovieService) Search(q string) ([]model.Movie, error) { return s.repo.Search(q) }
+
+func (s *MovieService) AddActor(movieID, actorID int64) error {
+	return s.repo.AddActorToMovie(movieID, actorID)
+}

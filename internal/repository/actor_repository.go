@@ -7,4 +7,5 @@ type ActorRepository interface {
 	Update(a *model.Actor) error
 	Delete(id int64) error
 	List() ([]model.Actor, error)
+	GetByID(id int64) (*model.Actor, error)
 }

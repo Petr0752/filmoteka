@@ -7,9 +7,13 @@ import (
 	"strings"
 )
 
-type MoviePG struct{ db *sql.DB }
+type MoviePG struct {
+	db *sql.DB
+}
 
-func NewMoviePG(db *sql.DB) *MoviePG { return &MoviePG{db: db} }
+func NewMoviePG(db *sql.DB) *MoviePG {
+	return &MoviePG{db: db}
+}
 
 func (r *MoviePG) Create(m *model.Movie) (int64, error) {
 	tx, err := r.db.Begin()
@@ -102,4 +106,36 @@ func (r *MoviePG) Search(q string) ([]model.Movie, error) {
 		res = append(res, m)
 	}
 	return res, rows.Err()
+}
+
+func (r *MoviePG) FindByActorID(actorID int64) ([]model.Movie, error) {
+	rows, err := r.db.Query(`
+		SELECT m.id, m.title, m.description, m.release_date, m.rating
+		FROM movies m
+		JOIN movie_actors ma ON ma.movie_id = m.id
+		WHERE ma.actor_id = $1
+	`, actorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var movies []model.Movie
+	for rows.Next() {
+		var m model.Movie
+		if err := rows.Scan(&m.ID, &m.Title, &m.Description, &m.ReleaseDate, &m.Rating); err != nil {
+			return nil, err
+		}
+		movies = append(movies, m)
+	}
+	return movies, nil
+}
+
+func (r *MoviePG) AddActorToMovie(movieID, actorID int64) error {
+	_, err := r.db.Exec(`
+		INSERT INTO movie_actors (movie_id, actor_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`, movieID, actorID)
+	return err
 }
