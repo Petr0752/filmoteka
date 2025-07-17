@@ -1,10 +1,5 @@
 module filmoteka
 
-<<<<<<< HEAD
-go 1.21.4
-
-require github.com/lib/pq v1.10.9
-=======
 go 1.23.0
 
 toolchain go1.23.11
@@ -41,4 +36,3 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
->>>>>>> master
