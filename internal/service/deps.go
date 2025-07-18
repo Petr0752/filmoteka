@@ -19,3 +19,7 @@ type MovieRepository interface {
 	FindByActorID(actorID int64) ([]model.Movie, error)
 	AddActorToMovie(movieID, actorID int64) error
 }
+
+type UserRepository interface {
+	GetByUsername(username string) (*model.User, error)
+}

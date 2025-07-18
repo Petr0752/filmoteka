@@ -20,12 +20,3 @@ func ActorDTOToModel(dto *ActorDTO) *model.Actor {
 		BirthDate: dto.BirthDate,
 	}
 }
-
-func ActorModelToDTO(actor *model.Actor) *ActorDTO {
-	return &ActorDTO{
-		ID:        actor.ID,
-		Name:      actor.Name,
-		Gender:    actor.Gender,
-		BirthDate: actor.BirthDate,
-	}
-}

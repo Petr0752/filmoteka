@@ -17,16 +17,19 @@ func main() {
 	}
 	defer db.Close()
 
-	actorRepo := repository.NewActorPG(db)
-	movieRepo := repository.NewMoviePG(db)
+	actorRepo := repository.NewActorRepository(db)
+	movieRepo := repository.NewMovieRepository(db)
+	userRepo := repository.NewUserRepository(db)
 
 	actorService := service.NewActorService(actorRepo)
 	movieService := service.NewMovieService(movieRepo)
+	userService := service.NewUserService(userRepo)
 
 	actorHandler := controller.NewActorHandler(actorService, movieRepo)
 	movieHandler := controller.NewMovieHandler(movieService)
+	userHandler := controller.NewAuthHandler(userService)
 
-	router := routes.SetupRouter(actorHandler, movieHandler)
+	router := routes.SetupRouter(actorHandler, movieHandler, userHandler)
 
 	if err := router.Run(":8080"); err != nil {
 		log.Fatal("Server error:", err)

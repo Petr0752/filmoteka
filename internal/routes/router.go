@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(ah *controller.ActorHandler, mh *controller.MovieHandler) *gin.Engine {
+func SetupRouter(ah *controller.ActorHandler, mh *controller.MovieHandler, uh *controller.AuthHandler) *gin.Engine {
 	r := gin.Default()
 
 	// Актёры
@@ -22,6 +22,9 @@ func SetupRouter(ah *controller.ActorHandler, mh *controller.MovieHandler) *gin.
 	r.PATCH("/movies/:id", mh.Update)
 	r.DELETE("/movies/:id", mh.Delete)
 	r.POST("/movies/:movie_id/actors/:actor_id", mh.AddActorToMovie)
+
+	// Авторизация
+	r.POST("/login", uh.Login)
 
 	return r
 }

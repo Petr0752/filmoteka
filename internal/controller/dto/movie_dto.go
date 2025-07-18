@@ -22,13 +22,3 @@ func MovieDTOToModel(dto *MovieDTO) *model.Movie {
 		Rating:      dto.Rating,
 	}
 }
-
-func MovieModelToDTO(m *model.Movie) *MovieDTO {
-	return &MovieDTO{
-		ID:          m.ID,
-		Title:       m.Title,
-		Description: m.Description,
-		ReleaseDate: m.ReleaseDate,
-		Rating:      m.Rating,
-	}
-}

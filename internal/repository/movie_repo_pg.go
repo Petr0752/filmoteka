@@ -4,18 +4,18 @@ import (
 	"database/sql"
 	"filmoteka/internal/model"
 	"fmt"
-	"strings"
+	"github.com/Masterminds/squirrel"
 )
 
-type MoviePG struct {
+type MovieRepository struct {
 	db *sql.DB
 }
 
-func NewMoviePG(db *sql.DB) *MoviePG {
-	return &MoviePG{db: db}
+func NewMovieRepository(db *sql.DB) *MovieRepository {
+	return &MovieRepository{db: db}
 }
 
-func (r *MoviePG) Create(m *model.Movie) (int64, error) {
+func (r *MovieRepository) Create(m *model.Movie) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return 0, err
@@ -40,7 +40,7 @@ func (r *MoviePG) Create(m *model.Movie) (int64, error) {
 	return m.ID, tx.Commit()
 }
 
-func (r *MoviePG) Update(m *model.Movie) error {
+func (r *MovieRepository) Update(m *model.Movie) error {
 	_, err := r.db.Exec(
 		`UPDATE movies SET title=$1, description=$2, release_date=$3, rating=$4,
 		       updated_at=now() WHERE id=$5`,
@@ -48,7 +48,7 @@ func (r *MoviePG) Update(m *model.Movie) error {
 	return err
 }
 
-func (r *MoviePG) Delete(id int64) error {
+func (r *MovieRepository) Delete(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM movies WHERE id=$1`, id)
 	return err
 }
@@ -59,7 +59,7 @@ var allowedSort = map[string]string{
 	"release_date": "release_date",
 }
 
-func (r *MoviePG) List(sort string) ([]model.Movie, error) {
+func (r *MovieRepository) List(sort string) ([]model.Movie, error) {
 	field, ok := allowedSort[sort]
 	if !ok {
 		field = "rating" // default: по убыв. рейтинга
@@ -84,14 +84,30 @@ func (r *MoviePG) List(sort string) ([]model.Movie, error) {
 	return res, rows.Err()
 }
 
-func (r *MoviePG) Search(q string) ([]model.Movie, error) {
-	p := "%" + strings.ToLower(q) + "%"
-	rows, err := r.db.Query(`
-	  SELECT DISTINCT m.id, m.title, m.description, m.release_date, m.rating
-	  FROM movies m
-	  LEFT JOIN movie_actors ma ON m.id = ma.movie_id
-	  LEFT JOIN actors a ON a.id = ma.actor_id
-	  WHERE lower(m.title) LIKE $1 OR lower(a.name) LIKE $1`, p)
+func (r *MovieRepository) Search(q string) ([]model.Movie, error) {
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	queryBuilder := psql.Select("m.id", "m.title", "m.description", "m.release_date", "m.rating").
+		From("movies m").
+		LeftJoin("movie_actors ma ON m.id = ma.movie_id").
+		LeftJoin("actors a ON a.id = ma.actor_id")
+
+	if q != "" {
+		queryBuilder = queryBuilder.Where(
+			squirrel.Or{
+				squirrel.Like{"m.title": "%" + q + "%"},
+				squirrel.Like{"m.description": "%" + q + "%"},
+				squirrel.Like{"a.name": "%" + q + "%"},
+			},
+		)
+	}
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +124,7 @@ func (r *MoviePG) Search(q string) ([]model.Movie, error) {
 	return res, rows.Err()
 }
 
-func (r *MoviePG) FindByActorID(actorID int64) ([]model.Movie, error) {
+func (r *MovieRepository) FindByActorID(actorID int64) ([]model.Movie, error) {
 	rows, err := r.db.Query(`
 		SELECT m.id, m.title, m.description, m.release_date, m.rating
 		FROM movies m
@@ -131,7 +147,7 @@ func (r *MoviePG) FindByActorID(actorID int64) ([]model.Movie, error) {
 	return movies, nil
 }
 
-func (r *MoviePG) AddActorToMovie(movieID, actorID int64) error {
+func (r *MovieRepository) AddActorToMovie(movieID, actorID int64) error {
 	_, err := r.db.Exec(`
 		INSERT INTO movie_actors (movie_id, actor_id)
 		VALUES ($1, $2)

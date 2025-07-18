@@ -5,15 +5,15 @@ import (
 	"filmoteka/internal/model"
 )
 
-type ActorPG struct {
+type ActorRepository struct {
 	db *sql.DB
 }
 
-func NewActorPG(db *sql.DB) *ActorPG {
-	return &ActorPG{db: db}
+func NewActorRepository(db *sql.DB) *ActorRepository {
+	return &ActorRepository{db: db}
 }
 
-func (r *ActorPG) Create(a *model.Actor) (int64, error) {
+func (r *ActorRepository) Create(a *model.Actor) (int64, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO actors (name, gender, birth_date)
 		 VALUES ($1,$2,$3) RETURNING id`,
@@ -22,7 +22,7 @@ func (r *ActorPG) Create(a *model.Actor) (int64, error) {
 	return a.ID, err
 }
 
-func (r *ActorPG) Update(a *model.Actor) error {
+func (r *ActorRepository) Update(a *model.Actor) error {
 	_, err := r.db.Exec(
 		`UPDATE actors SET name=$1, gender=$2, birth_date=$3, updated_at=now()
 		 WHERE id=$4`,
@@ -30,12 +30,12 @@ func (r *ActorPG) Update(a *model.Actor) error {
 	return err
 }
 
-func (r *ActorPG) Delete(id int64) error {
+func (r *ActorRepository) Delete(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM actors WHERE id=$1`, id)
 	return err
 }
 
-func (r *ActorPG) List() ([]model.Actor, error) {
+func (r *ActorRepository) List() ([]model.Actor, error) {
 	rows, err := r.db.Query(`SELECT id, name, gender, birth_date FROM actors`)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (r *ActorPG) List() ([]model.Actor, error) {
 	return res, rows.Err()
 }
 
-func (r *ActorPG) GetByID(id int64) (*model.Actor, error) {
+func (r *ActorRepository) GetByID(id int64) (*model.Actor, error) {
 	var a model.Actor
 	err := r.db.QueryRow(
 		`SELECT id, name, gender, birth_date FROM actors WHERE id=$1`, id,
