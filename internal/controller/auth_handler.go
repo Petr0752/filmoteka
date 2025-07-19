@@ -20,6 +20,17 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+// Login юзеров
+// @Summary      Авторизация
+// @Description  Получение JWT токена по логину и паролю
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      loginRequest  true  "Данные пользователя"
+// @Success      200    {object}  map[string]string
+// @Failure      400    {object}  map[string]string
+// @Failure      401    {object}  map[string]string
+// @Router       /login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

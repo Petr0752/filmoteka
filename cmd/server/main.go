@@ -1,12 +1,24 @@
+// @title Filmoteka API
+// @version 1.0
+// @description REST API для управления базой данных фильмов и актёров
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (
 	"database/sql"
+	_ "filmoteka/docs"
 	"filmoteka/internal/controller"
 	"filmoteka/internal/repository"
 	"filmoteka/internal/routes"
 	"filmoteka/internal/service"
 	_ "github.com/lib/pq"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
 )
 
@@ -30,6 +42,8 @@ func main() {
 	userHandler := controller.NewAuthHandler(userService)
 
 	router := routes.SetupRouter(actorHandler, movieHandler, userHandler)
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	if err := router.Run(":8080"); err != nil {
 		log.Fatal("Server error:", err)
