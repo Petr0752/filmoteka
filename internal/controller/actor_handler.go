@@ -2,7 +2,6 @@ package controller
 
 import (
 	"filmoteka/internal/controller/dto"
-	"filmoteka/internal/model"
 	"filmoteka/internal/service"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -102,7 +101,7 @@ func (h *ActorHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, actor)
 }
 
-// Update актера
+// Update актёра
 // @Summary Обновить данные актёра
 // @Tags Актёры
 // @Accept json
@@ -123,18 +122,23 @@ func (h *ActorHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
-	var a model.Actor
-	if err := c.ShouldBindJSON(&a); err != nil {
+
+	var actorDTO dto.ActorDTO
+	if err := c.ShouldBindJSON(&actorDTO); err != nil {
 		log.Println("Error:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
 		return
 	}
-	a.ID = id
-	if err := h.svc.Update(&a); err != nil {
+
+	actorDTO.ID = id
+	actor := dto.ActorDTOToModel(&actorDTO)
+
+	if err := h.svc.Update(actor); err != nil {
 		log.Println("Error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.Status(http.StatusNoContent)
 }
 

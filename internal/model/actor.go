@@ -7,5 +7,5 @@ type Actor struct {
 	Name      string    `json:"name"`
 	Gender    string    `json:"gender"`
 	BirthDate time.Time `json:"birth_date"`
-	Movies    []Movie   `json:"movies,omitempty"` // заполняется сервисом ListWithMovies
+	Movies    []Movie   `json:"movies,omitempty"`
 }
