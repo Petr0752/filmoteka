@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"filmoteka/internal/model"
+	"github.com/Masterminds/squirrel"
 )
 
 type ActorRepository struct {
@@ -14,29 +15,55 @@ func NewActorRepository(db *sql.DB) *ActorRepository {
 }
 
 func (r *ActorRepository) Create(a *model.Actor) (int64, error) {
-	err := r.db.QueryRow(
-		`INSERT INTO actors (name, gender, birth_date)
-		 VALUES ($1,$2,$3) RETURNING id`,
-		a.Name, a.Gender, a.BirthDate,
-	).Scan(&a.ID)
-	return a.ID, err
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("actors").
+		Columns("name", "gender", "birth_date").
+		Values(a.Name, a.Gender, a.BirthDate).
+		Suffix("RETURNING id").
+		ToSql()
+	if err != nil {
+		return 0, err
+	}
+	return a.ID, r.db.QueryRow(query, args...).Scan(&a.ID)
 }
 
 func (r *ActorRepository) Update(a *model.Actor) error {
-	_, err := r.db.Exec(
-		`UPDATE actors SET name=$1, gender=$2, birth_date=$3, updated_at=now()
-		 WHERE id=$4`,
-		a.Name, a.Gender, a.BirthDate, a.ID)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Update("actors").
+		Set("name", a.Name).
+		Set("gender", a.Gender).
+		Set("birth_date", a.BirthDate).
+		Set("updated_at", squirrel.Expr("now()")).
+		Where(squirrel.Eq{"id": a.ID}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(query, args...)
 	return err
 }
 
 func (r *ActorRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM actors WHERE id=$1`, id)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Delete("actors").
+		Where(squirrel.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(query, args...)
 	return err
 }
 
 func (r *ActorRepository) List() ([]model.Actor, error) {
-	rows, err := r.db.Query(`SELECT id, name, gender, birth_date FROM actors`)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "name", "gender", "birth_date").
+		From("actors").
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +81,16 @@ func (r *ActorRepository) List() ([]model.Actor, error) {
 }
 
 func (r *ActorRepository) GetByID(id int64) (*model.Actor, error) {
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Select("id", "name", "gender", "birth_date").
+		From("actors").
+		Where(squirrel.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
 	var a model.Actor
-	err := r.db.QueryRow(
-		`SELECT id, name, gender, birth_date FROM actors WHERE id=$1`, id,
-	).Scan(&a.ID, &a.Name, &a.Gender, &a.BirthDate)
+	err = r.db.QueryRow(query, args...).Scan(&a.ID, &a.Name, &a.Gender, &a.BirthDate)
 	if err != nil {
 		return nil, err
 	}

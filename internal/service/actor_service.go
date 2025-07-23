@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"filmoteka/internal/model"
 )
 
@@ -14,9 +13,6 @@ func NewActorService(r ActorRepository) *ActorService {
 }
 
 func (s *ActorService) Add(actor *model.Actor) (int64, error) {
-	if len(actor.Name) == 0 {
-		return 0, errors.New("name required")
-	}
 	return s.repo.Create(actor)
 }
 

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"filmoteka/internal/model"
 )
 
@@ -14,12 +13,6 @@ func NewMovieService(r MovieRepository) *MovieService {
 }
 
 func (s *MovieService) Add(movie *model.Movie) (int64, error) {
-	if l := len(movie.Title); l == 0 || l > 150 {
-		return 0, errors.New("title length must be 1-150")
-	}
-	if movie.Rating < 0 || movie.Rating > 10 {
-		return 0, errors.New("rating must be 0-10")
-	}
 	return s.repo.Create(movie)
 }
 

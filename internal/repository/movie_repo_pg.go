@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"filmoteka/internal/model"
-	"fmt"
 	"github.com/Masterminds/squirrel"
 )
 
@@ -16,40 +15,48 @@ func NewMovieRepository(db *sql.DB) *MovieRepository {
 }
 
 func (r *MovieRepository) Create(m *model.Movie) (int64, error) {
-	tx, err := r.db.Begin()
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.Insert("movies").
+		Columns("title", "description", "release_date", "rating").
+		Values(m.Title, m.Description, m.ReleaseDate, m.Rating).
+		Suffix("RETURNING id").
+		ToSql()
 	if err != nil {
 		return 0, err
 	}
-	defer tx.Rollback()
-
-	err = tx.QueryRow(
-		`INSERT INTO movies (title, description, release_date, rating)
-		 VALUES ($1,$2,$3,$4) RETURNING id`,
-		m.Title, m.Description, m.ReleaseDate, m.Rating).Scan(&m.ID)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, a := range m.Actors {
-		if _, err = tx.Exec(
-			`INSERT INTO movie_actors (movie_id, actor_id) VALUES ($1,$2)`,
-			m.ID, a.ID); err != nil {
-			return 0, err
-		}
-	}
-	return m.ID, tx.Commit()
+	return m.ID, r.db.QueryRow(query, args...).Scan(&m.ID)
 }
 
 func (r *MovieRepository) Update(m *model.Movie) error {
-	_, err := r.db.Exec(
-		`UPDATE movies SET title=$1, description=$2, release_date=$3, rating=$4,
-		       updated_at=now() WHERE id=$5`,
-		m.Title, m.Description, m.ReleaseDate, m.Rating, m.ID)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.
+		Update("movies").
+		Set("title", m.Title).
+		Set("description", m.Description).
+		Set("release_date", m.ReleaseDate).
+		Set("rating", m.Rating).
+		Set("updated_at", squirrel.Expr("now()")).
+		Where(squirrel.Eq{"id": m.ID}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(query, args...)
 	return err
 }
 
 func (r *MovieRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM movies WHERE id=$1`, id)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.
+		Delete("movies").
+		Where(squirrel.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(query, args...)
 	return err
 }
 
@@ -62,12 +69,21 @@ var allowedSort = map[string]string{
 func (r *MovieRepository) List(sort string) ([]model.Movie, error) {
 	field, ok := allowedSort[sort]
 	if !ok {
-		field = "rating" // default: по убыв. рейтинга
+		field = "rating"
 	}
-	query := fmt.Sprintf(`SELECT id, title, description, release_date, rating
-	                       FROM movies ORDER BY %s DESC`, field)
 
-	rows, err := r.db.Query(query)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	queryBuilder := psql.
+		Select("id", "title", "description", "release_date", "rating").
+		From("movies").
+		OrderBy(field + " DESC")
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -125,12 +141,18 @@ func (r *MovieRepository) Search(q string) ([]model.Movie, error) {
 }
 
 func (r *MovieRepository) FindByActorID(actorID int64) ([]model.Movie, error) {
-	rows, err := r.db.Query(`
-		SELECT m.id, m.title, m.description, m.release_date, m.rating
-		FROM movies m
-		JOIN movie_actors ma ON ma.movie_id = m.id
-		WHERE ma.actor_id = $1
-	`, actorID)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	query, args, err := psql.
+		Select("m.id", "m.title", "m.description", "m.release_date", "m.rating").
+		From("movies m").
+		Join("movie_actors ma ON ma.movie_id = m.id").
+		Where(squirrel.Eq{"ma.actor_id": actorID}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -148,10 +170,18 @@ func (r *MovieRepository) FindByActorID(actorID int64) ([]model.Movie, error) {
 }
 
 func (r *MovieRepository) AddActorToMovie(movieID, actorID int64) error {
-	_, err := r.db.Exec(`
-		INSERT INTO movie_actors (movie_id, actor_id)
-		VALUES ($1, $2)
-		ON CONFLICT DO NOTHING
-	`, movieID, actorID)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+
+	query, args, err := psql.
+		Insert("movie_actors").
+		Columns("movie_id", "actor_id").
+		Values(movieID, actorID).
+		Suffix("ON CONFLICT DO NOTHING").
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(query, args...)
 	return err
 }
