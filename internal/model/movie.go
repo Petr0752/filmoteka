@@ -3,10 +3,10 @@ package model
 import "time"
 
 type Movie struct {
-	ID          int64     `json:"id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	ReleaseDate time.Time `json:"release_date"`
-	Rating      float32   `json:"rating"`
-	Actors      []Actor   `json:"actors,omitempty"`
+	ID          int64
+	Title       string
+	Description string
+	ReleaseDate time.Time
+	Rating      float32
+	Actors      []Actor
 }
