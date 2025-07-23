@@ -8,5 +8,4 @@ type Movie struct {
 	Description string
 	ReleaseDate time.Time
 	Rating      float32
-	Actors      []Actor
 }
